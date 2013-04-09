@@ -6,7 +6,7 @@ License URI: http://www.gnu.org/licenses/gpl.html
 Tags: latest post, multisite, widget
 Requires at least: 3.0
 Tested up to: 3.5.1
-Stable tag: trunk
+Stable tag: 1.0
 
 == Description ==
 Latest Posts MultiSite Widget is a wordpress plugin that enables admin to add widgets which display latest posts content from other sites in a wordpress network. The widget supports custom post types, post images, excerpts and also custom fields data. Admin can use default template or make their custom template. 
