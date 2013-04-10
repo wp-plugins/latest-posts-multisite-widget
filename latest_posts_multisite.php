@@ -2,21 +2,21 @@
 /*
  * Plugin Name: Latest Posts MultiSite Widget
  * Version: 1.0
- * Plugin URI: http://wp4u.net/
+ * Plugin URI: http://wp4u.net/latest-posts-multisite-widget/
  * Description: Latest Posts MultiSite Widget is a wordpress plugin that enables admin to add widgets which display latest posts content from other sites in a wordpress network. The widget supports custom post types, post images, excerpts and also custom fields data. Admin can use default template or make their custom template. 
  * Author: WP4U
  * Author URI: http://wp4u.net/
  */
-class LatestPostsWidget extends WP_Widget
+class WP4U_LatestPostsWidget extends WP_Widget
 {
     /**
     * Declares the FacebookLikeBoxWidget class.
     *
     */
-    function LatestPostsWidget(){
-        $widget_ops = array('classname' => 'widget_LatestPostsWidget', 'description' => __( "Latest Posts MultiSite Widget is a wp plugin that enables admin to add widgets which display latest post content from other sites in wordpress network, support custom post types .") );
+    public function WP4U_LatestPostsWidget(){
+        $widget_ops = array('classname' => 'widget_WP4U_LatestPostsWidget', 'description' => __( "Latest Posts MultiSite Widget is a wp plugin that enables admin to add widgets which display latest post content from other sites in wordpress network, support custom post types .") );
         $control_ops = array('width' => 300, 'height' => 300);
-        $this->WP_Widget('LatestPostsWidget', __('Latest Posts MultiSite Widget'), $widget_ops, $control_ops);
+        parent::WP_Widget(false, __('WP4U Latest Posts MultiSite Widget'), $widget_ops, $control_ops);
     }
     
     /**
@@ -26,13 +26,14 @@ class LatestPostsWidget extends WP_Widget
     function widget($args, $instance){
         extract($args);
         extract($instance);
-        switch_to_blog($blog_id);
+        if(is_multisite())
+            switch_to_blog($blog_id);
         $output = '';
         global $wpdb;
         
         $request = $wpdb->prepare("SELECT ".$wpdb->prefix."posts.*
                    FROM ".$wpdb->prefix."posts
-                   WHERE post_type='$post_type' AND post_status = 'publish' ORDER BY post_date DESC LIMIT ".$limit);
+                   WHERE post_type='$post_type' AND post_status = 'publish' ORDER BY post_date DESC LIMIT 0,%d",(int)$limit);
         $results = $wpdb->get_results($request);
         $results = $wpdb->get_results($request);
 
@@ -63,7 +64,7 @@ class LatestPostsWidget extends WP_Widget
                                   $image = "<img src='$image_src' alt='{$post->post_title}' />";
                              }
                         }
-                        
+                        $template = trim($template);
                         if(empty($template))
                         {                        
                             $output .= '<li>';
@@ -91,7 +92,8 @@ class LatestPostsWidget extends WP_Widget
 
                     $output .= '</ul>';
                 }
-                restore_current_blog();
+                if(is_multisite())
+                    restore_current_blog();
           echo $before_widget . $before_title . $title . $after_title;
           echo $output . $after_widget;
     }
@@ -124,8 +126,11 @@ class LatestPostsWidget extends WP_Widget
         //Defaults
         $instance = wp_parse_args( (array) $instance, array('title'=>'', 'limit' => 5,'post_type' => 'post','blog_id' => 1,'template' => '','imagew' => 100,'imageh' => 100,'excerpt_length' => 20));
         extract($instance);
-        
-        $blogs = get_blog_list(0,'all');
+        $blogs = array();
+        if(is_multisite())
+            $blogs = get_blog_list(0,'all');
+        else
+            $blogs[] = array('blog_id' => 1)
         
        ?>
        <p>
@@ -144,8 +149,13 @@ class LatestPostsWidget extends WP_Widget
         <label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Blog:' ); ?></label> 
         <select class="widefat" id="<?php echo $this->get_field_id( 'blog_id' ); ?>" name="<?php echo $this->get_field_name( 'blog_id' ); ?>"  >
             <?php foreach($blogs as $bid=>$blog) {  
+                
+                if(is_multisite())
+                    $blog_name = get_blog_option($blog['blog_id'],'blogname');
+                else
+                    $blog_name = get_option('blogname');
             ?>
-                <option value="<?php echo $blog['blog_id'];?>" <?php if((int)$blog['blog_id'] == (int)$blog_id) echo 'selected="selected"'?>><?php echo get_blog_option($blog['blog_id'],'blogname');?></option>
+                <option value="<?php echo $blog['blog_id'];?>" <?php if((int)$blog['blog_id'] == (int)$blog_id) echo 'selected="selected"'?>><?php echo $blog_name;?></option>
             <?php }
             ?>
         </select>
@@ -189,7 +199,4 @@ class LatestPostsWidget extends WP_Widget
     *
     * Calls 'widgets_init' action after widget has been registered.
     */
-    function LatestPostsWidgetInit() {
-        register_widget('LatestPostsWidget');
-    }    
-    add_action('widgets_init', 'LatestPostsWidgetInit');
+add_action('widgets_init', create_function('', 'return register_widget(\'WP4U_LatestPostsWidget\');'));
